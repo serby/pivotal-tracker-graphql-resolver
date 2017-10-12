@@ -5,10 +5,10 @@ const Table = require('cli-table')
 
 const hourlyRate = 95
 const dayLength = 8 / 1.2
-
+const projectId = process.env.PROJECT_ID
 const query = `
 {
-  project(id:2114927) {
+  project(id:${projectId}) {
     name
     description
     stories {
