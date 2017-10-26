@@ -1,5 +1,6 @@
 const createProjectFetcher = require('./project-fetcher')
 const createStoriesFetcher = require('./stories-fetcher')
+const createEpicsFetcher = require('./epics-fetcher')
 
 const {
   GraphQLSchema,
@@ -12,12 +13,29 @@ const {
 const createSchema = token => {
   const fetchProject = createProjectFetcher(token)
   const fetchStories = createStoriesFetcher(token)
+  const fetchEpics = createEpicsFetcher(token)
 
   const ProjectType = new GraphQLObjectType({
     name: 'Project',
     fields: () => ({
+      id: { type: GraphQLInt },
+      url: {
+        type: GraphQLString,
+        resolve: (root) => {
+          return `https://www.pivotaltracker.com/n/projects/${root.id}`
+        }
+      },
       name: { type: GraphQLString },
       description: { type: GraphQLString },
+      epics: {
+        type: new GraphQLList(EpicType),
+        args: {
+          label: { type: GraphQLString }
+        },
+        resolve: (project, args, context) => {
+          return fetchEpics(project.id, args.label)
+        }
+      },
       stories: {
         type: new GraphQLList(StoryType),
         args: {
@@ -30,9 +48,50 @@ const createSchema = token => {
     })
   })
 
+  const EpicType = new GraphQLObjectType({
+    name: 'Epic',
+    fields: () => ({
+      id: {
+        type: GraphQLInt
+      },
+      url: {
+        type: GraphQLString,
+        resolve: root => `https://www.pivotaltracker.com/epic/show/${root.id}`
+      },
+      title: {
+        type: GraphQLString,
+        resolve: root => root.name
+      },
+      description: {
+        type: GraphQLString,
+        resolve: root => root.description
+      },
+      label: {
+        type: GraphQLString,
+        resolve: root => root.label.name
+      },
+      stories: {
+        type: new GraphQLList(StoryType),
+        args: {
+          label: { type: GraphQLString }
+        },
+        resolve: (epic, args, context) => {
+          return fetchStories(epic.project_id, epic.label.name)
+        }
+      }
+    })
+  })
+
   const StoryType = new GraphQLObjectType({
     name: 'Story',
     fields: () => ({
+      id: {
+        type: GraphQLInt
+      },
+      url: {
+        type: GraphQLString,
+        resolve: root => `https://www.pivotaltracker.com/story/show/${root.id}`
+      },
       title: {
         type: GraphQLString,
         resolve: root => root.name
@@ -48,6 +107,10 @@ const createSchema = token => {
       type: {
         type: GraphQLString,
         resolve: root => root.kind
+      },
+      state: {
+        type: GraphQLString,
+        resolve: root => root.current_state
       },
       labels: {
         type: new GraphQLList(GraphQLString),

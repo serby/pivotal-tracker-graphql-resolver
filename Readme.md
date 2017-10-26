@@ -12,11 +12,17 @@ yarn install
 
 ## Run
 
-All project processes can be started using the following:
+Currently there are two functions:
 
-```
-yarn start
-```
+### Pivotal Tracker to Markdown
+
+TOKEN=<API_TOKEN> PROJECT_ID=<PROJECT_ID> node markdowner
+
+### Tag Report
+
+Sums the total number of points in each tag.
+
+TOKEN=<API_TOKEN> PROJECT_ID=<PROJECT_ID> node app
 
 ## Linting
 

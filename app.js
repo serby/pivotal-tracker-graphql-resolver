@@ -1,7 +1,6 @@
 const createSchema = require('./schema')
 const { graphql } = require('graphql')
 const sortBy = require('lodash.sortby')
-const Table = require('cli-table')
 
 const hourlyRate = 95
 const dayLength = 8 / 1.2
@@ -15,6 +14,7 @@ const query = `
       title
       points
       labels
+      state
     }
   }
 }
@@ -38,10 +38,14 @@ const cost = (key, total) => {
 }
 const token = process.env.TOKEN
 graphql(createSchema(token), query).then(response => {
-  const totals = totalLabels(response.data.project.stories)
+  //const stories = response.data.project.stories.filter(story => story.points > 0 && story.labels.includes('clock'))
+
+  const stories = response.data.project.stories.filter(story => story.state === 'unscheduled')
+  const totals = totalLabels(stories)
   const output = Object.keys(totals).map(key => cost(key, totals[key]))
-  const table = new Table({ head: Object.keys(output[0]) })
-  sortBy(output, 'hours').forEach(row => table.push(Object.values(row)))
-  console.log(table.toString())
+
+  sortBy(output, 'key').map(({ key, cost, hours }) => [ key.padStart(30), String(cost).padStart(10), String(hours).padStart(10) ])
+    .forEach(row => console.log(row.join('\t')))
+
   console.log({ hourlyRate, dayLength, total: hourlyRate })
 })

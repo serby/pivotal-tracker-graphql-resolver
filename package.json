@@ -10,7 +10,6 @@
     "node": ">=8.2.4"
   },
   "scripts": {
-    "start": "node app",
     "qa:inspect": "jsinspect .",
     "qa:test": "jest",
     "qa:lint": "eslint -f unix .",
