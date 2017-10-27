@@ -1,6 +1,7 @@
 const createProjectFetcher = require('./project-fetcher')
-const createStoriesFetcher = require('./stories-fetcher')
 const createEpicsFetcher = require('./epics-fetcher')
+const createStoriesFetcher = require('./stories-fetcher')
+const createBlockerFetcher = require('./blocker-fetcher')
 
 const {
   GraphQLSchema,
@@ -14,6 +15,7 @@ const createSchema = token => {
   const fetchProject = createProjectFetcher(token)
   const fetchStories = createStoriesFetcher(token)
   const fetchEpics = createEpicsFetcher(token)
+  const fetchBlocker = createBlockerFetcher(token)
 
   const ProjectType = new GraphQLObjectType({
     name: 'Project',
@@ -82,12 +84,25 @@ const createSchema = token => {
     })
   })
 
+  const BlockerType = new GraphQLObjectType({
+    name: 'Blocker',
+    fields: () => ({
+      description: {
+        type: GraphQLString
+      },
+      resolved: {
+        type: GraphQLString
+      }
+    })
+  })
+
   const StoryType = new GraphQLObjectType({
     name: 'Story',
     fields: () => ({
       id: {
         type: GraphQLInt
       },
+
       url: {
         type: GraphQLString,
         resolve: root => `https://www.pivotaltracker.com/story/show/${root.id}`
@@ -111,6 +126,12 @@ const createSchema = token => {
       state: {
         type: GraphQLString,
         resolve: root => root.current_state
+      },
+      blockers: {
+        type: new GraphQLList(BlockerType),
+        resolve: (story) => {
+          return fetchBlocker(story.id, story.project_id)
+        }
       },
       labels: {
         type: new GraphQLList(GraphQLString),

@@ -16,9 +16,13 @@ const query = `
       label
       stories {
         id
+        type
         url
         title
         points
+        blockers {
+          description
+        }
       }
     }
   }
@@ -53,6 +57,8 @@ graphql(createSchema(token), query).then(response => {
     sortBy(epic.stories, 'title').forEach(story => {
       console.log(`* [${story.title}](${story.url})`, story.points ? `- ${story.points} hours` : '')
       story.description && console.log(story.description, '\n')
+      story.blockers.length > 0 &&
+        console.log(story.blockers.map(blocker => '  * 🚫 ' + blocker.description).join('\n'))
     })
   })
 }).catch(error => {
