@@ -29,6 +29,14 @@ const query = `
 }
 `
 
+const typeToEmoji = type => {
+  return {
+    chore: '⚙️',
+    feature: '⭐️',
+    bug: '🐞'
+  }[type] || ''
+}
+
 const token = process.env.TOKEN
 graphql(createSchema(token), query).then(response => {
   if (response.errors) return console.error(response.errors)
@@ -55,7 +63,7 @@ graphql(createSchema(token), query).then(response => {
     epic.description && console.log(epic.description, '\n')
 
     sortBy(epic.stories, 'title').forEach(story => {
-      console.log(`* [${story.title}](${story.url})`, story.points ? `- ${story.points} hours` : '')
+      console.log(`* ${typeToEmoji(story.type)}  [${story.title}](${story.url})`, story.points ? `- ${story.points} hours` : '')
       story.description && console.log(story.description, '\n')
       story.blockers.length > 0 &&
         console.log(story.blockers.map(blocker => '  * 🚫 ' + blocker.description).join('\n'))
