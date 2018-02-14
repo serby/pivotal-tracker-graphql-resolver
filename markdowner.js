@@ -34,13 +34,26 @@ const typeToEmoji = type => {
   }[type] || ''
 }
 
+const unitMap = {
+  point: {
+    s: 'Point',
+    p: 'Points'
+  },
+  hour: {
+    s: 'Hour',
+    p: 'Hours'
+  }
+}
+const displayUnit = amount => {
+  return amount === 1 ? unitMap[unit].s : unitMap[unit].p
+}
+
+const unit = process.env.UNIT || 'point'
+const displayPoints = false
 const token = process.env.TOKEN
 graphql(createSchema(token), query).then(response => {
   if (response.errors) return console.error(response.errors)
   const { project } = response.data
-  console.log(`# ${project.name}\n`)
-  console.log(`${project.url}\n`)
-  project.description && console.log(project.description, '\n')
   const stats = project.epics.reduce((stats, epic) => {
     stats.count += epic.stories.length
     stats.epics += 1
@@ -51,21 +64,32 @@ graphql(createSchema(token), query).then(response => {
     stats.sum += epic.sum
     return stats
   }, { count: 0, sum: 0, epics: 0 })
-  console.log(`This project has **${stats.sum}** points in **${stats.count}** stories contained in **${stats.epics}** epics\n`)
-  project.epics.forEach(epic => {
-    if (epic.title.includes('----')) return
-    console.log(`## ${epic.title}\n`)
-    console.log(`${epic.url}\n`)
-    console.log(`Epic Points: ${epic.sum}\n`)
-    epic.description && console.log(epic.description, '\n')
 
-    sortBy(epic.stories, 'title').forEach(story => {
-      console.log(`* ${typeToEmoji(story.type)}  [${story.title}](${story.url})`, story.points ? `- ${story.points} points` : '')
-      story.description && console.log(story.description, '\n')
-      story.blockers && story.blockers.length > 0 &&
-        console.log(story.blockers.map(blocker => '  * 🚫 ' + blocker.description).join('\n'))
-    })
-  })
+  const markdown = `# ${project.name}
+
+${project.url}
+${project.description ? project.description + '\n' : ''}
+
+This project has **${stats.sum}** ${displayUnit(stats.sum)} in **${stats.count}** stories contained in **${stats.epics}** epics
+
+${
+  project.epics.map(epic => {
+    if (epic.title.includes('----')) return ''
+    return `
+## ${epic.title}
+
+${epic.url}
+
+${displayPoints ? `Epic Points: ${epic.sum}` : ''}
+${epic.description ? '\n' + epic.description + '\n' : ''}
+${
+  sortBy(epic.stories, 'title').map(story => `* ${typeToEmoji(story.type)}  [${story.title}](${story.url}) ${displayPoints && story.points ? `- ${story.points} ${displayUnit(story.points)}` : ''}
+${story.description ? '\n' + story.description + '\n' : ''}`).join('')
+}
+`
+  }).join('')}
+`
+  console.log(markdown)
 }).catch(error => {
   console.error(error)
 })
