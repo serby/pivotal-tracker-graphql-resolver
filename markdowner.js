@@ -20,9 +20,6 @@ const query = `
         url
         title
         points
-        blockers {
-          description
-        }
       }
     }
   }
@@ -45,27 +42,27 @@ graphql(createSchema(token), query).then(response => {
   console.log(`${project.url}\n`)
   project.description && console.log(project.description, '\n')
   const stats = project.epics.reduce((stats, epic) => {
-    stats.count = epic.stories.length
+    stats.count += epic.stories.length
+    stats.epics += 1
     epic.sum = epic.stories.reduce((sum, story) => {
       sum += story.points || 0
       return sum
     }, 0)
     stats.sum += epic.sum
     return stats
-  }, { count: 0, sum: 0 })
-  console.log(`Story Count: ${stats.count}\n`)
-  console.log(`Story Total: ${stats.sum}\n`)
+  }, { count: 0, sum: 0, epics: 0 })
+  console.log(`This project has **${stats.sum}** points in **${stats.count}** stories contained in **${stats.epics}** epics\n`)
   project.epics.forEach(epic => {
     if (epic.title.includes('----')) return
     console.log(`## ${epic.title}\n`)
     console.log(`${epic.url}\n`)
-    console.log(`Epic Total: ${epic.sum}\n`)
+    console.log(`Epic Points: ${epic.sum}\n`)
     epic.description && console.log(epic.description, '\n')
 
     sortBy(epic.stories, 'title').forEach(story => {
-      console.log(`* ${typeToEmoji(story.type)}  [${story.title}](${story.url})`, story.points ? `- ${story.points} hours` : '')
+      console.log(`* ${typeToEmoji(story.type)}  [${story.title}](${story.url})`, story.points ? `- ${story.points} points` : '')
       story.description && console.log(story.description, '\n')
-      story.blockers.length > 0 &&
+      story.blockers && story.blockers.length > 0 &&
         console.log(story.blockers.map(blocker => '  * 🚫 ' + blocker.description).join('\n'))
     })
   })
