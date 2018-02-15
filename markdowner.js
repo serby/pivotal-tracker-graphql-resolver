@@ -70,7 +70,7 @@ graphql(createSchema(token), query).then(response => {
 ${project.url}
 ${project.description ? project.description + '\n' : ''}
 
-This project has **${stats.sum}** ${displayUnit(stats.sum)} in **${stats.count}** stories contained in **${stats.epics}** epics
+This project has **${stats.sum}** ${displayUnit(stats.sum).toLowerCase()} in **${stats.count}** stories contained in **${stats.epics}** epics
 
 ${
   project.epics.map(epic => {
