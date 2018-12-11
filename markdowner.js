@@ -30,8 +30,9 @@ const typeToEmoji = type => {
   return {
     chore: '⚙️',
     feature: '⭐️',
+    story: '⭐️',
     bug: '🐞'
-  }[type] || ''
+  }[type] || `[${type}]`
 }
 
 const unitMap = {
@@ -83,7 +84,7 @@ ${epic.url}
 ${displayPoints ? `Epic Points: ${epic.sum}` : ''}
 ${epic.description ? '\n' + epic.description + '\n' : ''}
 ${
-  sortBy(epic.stories, 'title').map(story => `* ${typeToEmoji(story.type)}  [${story.title}](${story.url}) ${displayPoints && story.points ? `- ${story.points} ${displayUnit(story.points)}` : ''}
+  sortBy(epic.stories, 'title').map(story => `1. ${typeToEmoji(story.type)} ${story.title} [[${story.id}]](${story.url}) ${displayPoints && story.points ? `- ${story.points} ${displayUnit(story.points)}` : ''}
 ${story.description ? '\n' + story.description + '\n' : ''}`).join('')
 }
 `
