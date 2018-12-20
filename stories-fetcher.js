@@ -8,10 +8,11 @@ const fetcher = token => async (id, label = '') => {
   if (label) {
     query['with_label'] = label
   }
-  return (await fetch(`https://www.pivotaltracker.com/services/v5/projects/${id}/stories?${stringify(query)}`, {
+  const response = await (await fetch(`https://www.pivotaltracker.com/services/v5/projects/${id}/stories?${stringify(query)}`, {
     headers: {
       'X-TrackerToken': token
     }
   })).json()
+  return response
 }
 module.exports = fetcher

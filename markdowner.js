@@ -1,6 +1,6 @@
 const createSchema = require('./schema')
 const { graphql } = require('graphql')
-const sortBy = require('lodash.sortby')
+const marked = require('marked')
 
 const projectId = process.env.PROJECT_ID
 const query = `
@@ -9,6 +9,10 @@ const query = `
     url
     name
     description
+    membership {
+      username
+      id
+    }
     epics {
       url
       title
@@ -16,15 +20,26 @@ const query = `
       label
       stories {
         id
+        description
         type
         url
         title
         points
+        comments {
+          text
+          author
+        }
       }
     }
   }
 }
 `
+
+const encodeHtml = str => str.replace(/[\u00A0-\u9999<>&](?!#)/gim, i => '&#' + i.charCodeAt(0) + ';')
+
+const nl2br = input => input.replace(/\n/g, '\n\n')
+
+const markedNl2br = input => marked(nl2br(encodeHtml(input)))
 
 const typeToEmoji = type => {
   return {
@@ -66,31 +81,47 @@ graphql(createSchema(token), query).then(response => {
     return stats
   }, { count: 0, sum: 0, epics: 0 })
 
-  const markdown = `# ${project.name}
+  const memberIndex = project.membership.reduce((index, member) => {
+    index[member.id] = member.username
+    return index
+  }, {})
 
-${project.url}
-${project.description ? project.description + '\n' : ''}
-
-This project has **${stats.sum}** ${displayUnit(stats.sum).toLowerCase()} in **${stats.count}** stories contained in **${stats.epics}** epics
-
-${
-  project.epics.map(epic => {
-    if (epic.title.includes('----')) return ''
-    return `
-## ${epic.title}
-
-${epic.url}
-
-${displayPoints ? `Epic Points: ${epic.sum}` : ''}
-${epic.description ? '\n' + epic.description + '\n' : ''}
-${
-  sortBy(epic.stories, 'title').map(story => `1. ${typeToEmoji(story.type)} ${story.title} [[${story.id}]](${story.url}) ${displayPoints && story.points ? `- ${story.points} ${displayUnit(story.points)}` : ''}
-${story.description ? '\n' + story.description + '\n' : ''}`).join('')
-}
+  const html = `<html>
+<head><title>${project.name}</title></head>
+<body>
+<h1>${project.name}</h1>
+<p><a href="${project.url}">${project.url}</a></p>
+${project.description ? '<p>project.description</p>' : ''}
+<p>This project has <strong>${stats.sum}</strong> ${displayUnit(stats.sum).toLowerCase()} in <strong>${stats.count}</strong> stories contained in <strong>${stats.epics}</strong> epics</p>
+${project.epics.map(convertEpicToHtml(memberIndex)).join('\n')}
+</body>
+</html>
 `
-  }).join('')}
-`
-  console.log(markdown)
-}).catch(error => {
-  console.error(error)
+  console.log(html)
 })
+
+const convertEpicToHtml = memberIndex => epic => {
+  if (epic.title.includes('----')) return ''
+  return `
+<h2>${markedNl2br(epic.title)}</h2>
+<p><a href="${epic.url}">${epic.url}</a></p>
+${displayPoints ? `<p>Epic Points: ${epic.sum}</p>` : ''}
+${epic.description ? markedNl2br(epic.description) : ''}
+${epic.stories.length > 0 ? `<ol>${epic.stories.map(convertStoryToHtml(memberIndex)).join('')}</ol>` : ''}
+`
+}
+
+const convertCommentToHtml = memberIndex => comment => comment.text ? `<p>@${memberIndex[comment.author]} - ${comment.text}</p>` : ''
+
+const convertCommentsToHtml = (memberIndex, comments) => {
+  if (comments && comments.length > 0) {
+    const out = comments.map(convertCommentToHtml(memberIndex)).join('')
+    if (out.length > 0) return `<h3>Comments</h3>${out}`
+  }
+  return ''
+}
+
+const convertStoryToHtml = memberIndex => story => `
+<li>${markedNl2br(typeToEmoji(story.type) + ' ' + `${story.title} [${story.id}](${story.url}) ${displayPoints && story.points ? `- ${story.points} ${displayUnit(story.points)}` : ''}`)}
+${story.description ? `${markedNl2br(story.description)}` : ''}
+${convertCommentsToHtml(memberIndex, story.comments)}`

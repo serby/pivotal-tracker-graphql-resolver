@@ -20,6 +20,7 @@
     "graphql": "^0.11.7",
     "isomorphic-fetch": "^2.2.1",
     "lodash.sortby": "^4.7.0",
+    "marked": "^0.5.2",
     "nodemon": "^1.12.1",
     "p-memoize": "^1.0.0"
   },

@@ -2,6 +2,7 @@ const createProjectFetcher = require('./project-fetcher')
 const createEpicsFetcher = require('./epics-fetcher')
 const createStoriesFetcher = require('./stories-fetcher')
 const createBlockerFetcher = require('./blocker-fetcher')
+const createCommentsFetcher = require('./comments-fetcher')
 
 const {
   GraphQLSchema,
@@ -16,7 +17,7 @@ const createSchema = token => {
   const fetchStories = createStoriesFetcher(token)
   const fetchEpics = createEpicsFetcher(token)
   const fetchBlocker = createBlockerFetcher(token)
-
+  const fetchComments = createCommentsFetcher(token)
   const ProjectType = new GraphQLObjectType({
     name: 'Project',
     fields: () => ({
@@ -29,6 +30,9 @@ const createSchema = token => {
       },
       name: { type: GraphQLString },
       description: { type: GraphQLString },
+      membership: {
+        type: new GraphQLList(PersonType)
+      },
       epics: {
         type: new GraphQLList(EpicType),
         args: {
@@ -46,6 +50,18 @@ const createSchema = token => {
         resolve: (project, args, context) => {
           return fetchStories(project.id, args.label)
         }
+      }
+    })
+  })
+
+  const PersonType = new GraphQLObjectType({
+    name: 'Person',
+    fields: () => ({
+      id: {
+        type: GraphQLInt
+      },
+      username: {
+        type: GraphQLString
       }
     })
   })
@@ -96,6 +112,27 @@ const createSchema = token => {
     })
   })
 
+  const CommentType = new GraphQLObjectType({
+    name: 'Comment',
+    fields: () => ({
+      text: {
+        type: GraphQLString
+      },
+      createdDate: {
+        type: GraphQLString,
+        resolve: root => root['created_at']
+      },
+      updatedDate: {
+        type: GraphQLString,
+        resolve: root => root['updated_at']
+      },
+      author: {
+        type: GraphQLString,
+        resolve: root => root['person_id']
+      }
+    })
+  })
+
   const StoryType = new GraphQLObjectType({
     name: 'Story',
     fields: () => ({
@@ -130,12 +167,18 @@ const createSchema = token => {
       blockers: {
         type: new GraphQLList(BlockerType),
         resolve: (story) => {
-          return fetchBlocker(story.id, story.project_id)
+          return fetchBlocker(story.project_id, story.id)
         }
       },
       labels: {
         type: new GraphQLList(GraphQLString),
         resolve: root => root.labels.map(label => label.name)
+      },
+      comments: {
+        type: new GraphQLList(CommentType),
+        resolve: (story, args, context) => {
+          return fetchComments(story.project_id, story.id)
+        }
       }
     })
   })
