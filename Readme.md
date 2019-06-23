@@ -1,5 +1,7 @@
 # Pivotal Tracker Graphql Resolver
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/serby/pivotal-tracker-graphql-resolver.svg)](https://greenkeeper.io/)
+
 Graphql Resolver that interfaces with the Pivotal Tracker Rest API
 
 ## Setup
